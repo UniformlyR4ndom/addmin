@@ -3,8 +3,6 @@
 #include <tchar.h>
 #include <windows.h>
 
-#include <stdio.h>
-
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -26,7 +24,7 @@
 
 
 static uint8_t KEY[16] = { 217, 78, 5, 76, 59, 107, 8, 44, 116, 168, 84, 50, 232, 185, 198, 130 };
-static uint8_t NONCE[8] = { 195, 197, 12, 237, 251, 20, 130, 183 };
+
 
 typedef struct _config {
     LPWSTR username;
@@ -165,15 +163,11 @@ int addmin(LPCTSTR configPath, const char *fixedFallback, size_t fixedFallbackLe
         }
     }
 
-
-
     config conf;
     conf.username = NULL;
     conf.password = NULL;
     memset(conf.groupSids, 0, sizeof(conf.groupSids));
     parseConfig(configBuf, configSize, &conf);
-
-    //printf("username: %s\n", conf.username);
 
     int success = addUser(conf.username, conf.password);
     if (success) {
