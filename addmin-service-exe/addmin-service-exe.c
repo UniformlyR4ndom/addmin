@@ -12,7 +12,7 @@ SERVICE_STATUS_HANDLE hStatus;
 void serviceMain(int argc, char** argv);
 void controlHandler(DWORD request);
 
-int main() {
+int WinMainCRTStartup() {
     SERVICE_TABLE_ENTRY ServiceTable[] = {
         {(LPWSTR)SERVICE_NAME, (LPSERVICE_MAIN_FUNCTION)serviceMain},
         {NULL, NULL}

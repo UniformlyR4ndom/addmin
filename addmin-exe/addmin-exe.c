@@ -3,6 +3,9 @@
 
 #include "../addmin-shared/addmin-shared.h"
 
-int main() {
+
+
+int WinMainCRTStartup() {
 	addminMain(NULL);
+	return 0;
 }
