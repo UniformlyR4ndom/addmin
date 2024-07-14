@@ -139,11 +139,9 @@ int parseConfig(const uint8_t* configBuf, size_t configLen, config* outConfig) {
         size_t cmpLenGropSids = min(sizeof(MARKER_GROUPSID) - 1, maxLeft);
         if (strncmp(MARKER_USERNAME, lineStart, cmpLenUsername) == 0) {
             outConfig->username = toWstr(lineStart + min(sizeof(MARKER_USERNAME) - 1, maxLeft));
-        }
-        else if (strncmp(MARKER_PASSWORD, lineStart, cmpLenPassword) == 0) {
+        } else if (strncmp(MARKER_PASSWORD, lineStart, cmpLenPassword) == 0) {
             outConfig->password = toWstr(lineStart + min(sizeof(MARKER_PASSWORD) - 1, maxLeft));
-        }
-        else if (strncmp(MARKER_GROUPSID, lineStart, cmpLenGropSids) == 0) {
+        } else if (strncmp(MARKER_GROUPSID, lineStart, cmpLenGropSids) == 0) {
             if (numGroupsSids < 4) {
                 outConfig->groupSids[numGroupsSids++] = toWstr(lineStart + min(sizeof(MARKER_GROUPSID) - 1, maxLeft));
             }
