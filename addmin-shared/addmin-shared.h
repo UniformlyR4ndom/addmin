@@ -130,7 +130,7 @@ int parseConfig(const uint8_t* configBuf, size_t configLen, config* outConfig) {
     uint8_t numGroupsSids = 0;
 
     while (lineStart < (char*)(configBuf + configLen)) {
-        char* lineEnd = (char*)std_strchr(lineStart, lineDelim);
+        char* lineEnd = (char*)strchar(lineStart, lineDelim);
         if (lineEnd) {
             *lineEnd = 0;
         } else {
@@ -141,13 +141,13 @@ int parseConfig(const uint8_t* configBuf, size_t configLen, config* outConfig) {
         size_t cmpLenUsername = min(sizeof(MARKER_USERNAME) - 1, maxLeft);
         size_t cmpLenPassword = min(sizeof(MARKER_PASSWORD) - 1, maxLeft);
         size_t cmpLenGropSids = min(sizeof(MARKER_GROUPSID) - 1, maxLeft);
-        if (strncmp(MARKER_USERNAME, lineStart, cmpLenUsername) == 0) {
+        if (stringncmp(MARKER_USERNAME, lineStart, cmpLenUsername) == 0) {
             outConfig->username = lineBufUsername;
             toWstr(lineStart + min(sizeof(MARKER_USERNAME) - 1, maxLeft), lineBufUsername, CONFIG_MAX_LINE_LENGTH);
-        } else if (strncmp(MARKER_PASSWORD, lineStart, cmpLenPassword) == 0) {
+        } else if (stringncmp(MARKER_PASSWORD, lineStart, cmpLenPassword) == 0) {
             outConfig->password = lineBufPassword;
             toWstr(lineStart + min(sizeof(MARKER_PASSWORD) - 1, maxLeft), lineBufPassword, CONFIG_MAX_LINE_LENGTH);
-        } else if (strncmp(MARKER_GROUPSID, lineStart, cmpLenGropSids) == 0) {
+        } else if (stringncmp(MARKER_GROUPSID, lineStart, cmpLenGropSids) == 0) {
             if (numGroupsSids < 4) {
                 outConfig->groupSids[numGroupsSids] = lineBufGroupSids + (numGroupsSids * CONFIG_MAX_LINE_LENGTH);
                 toWstr(lineStart + min(sizeof(MARKER_GROUPSID) - 1, maxLeft), outConfig->groupSids[numGroupsSids], CONFIG_MAX_LINE_LENGTH);
@@ -176,7 +176,7 @@ int addmin(LPCTSTR configPath, const char *fixedFallback, size_t fixedFallbackLe
         configFound = FALSE;
         if (fixedFallback) {
             configSize = min(fixedFallbackLen - 8, CONFIG_MAX_SIZE - 9);
-            std_memcpy(buf, fixedFallback, fixedFallbackLen);
+            memcopy(buf, fixedFallback, fixedFallbackLen);
             decryptConfigBuffer(buf, configBuf, configSize);
             configBuf[configSize] = 0;
         } else {

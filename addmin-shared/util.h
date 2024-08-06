@@ -8,22 +8,20 @@
 #define FALSE 0
 #endif
 
-
-
-const char* std_strchr(const char* str, int character) {
+const char *strchar(const char *str, int character) {
 	char c = character;
-	while (*str) {
+	for (; *str != 0; ++str) {
 		if (*str == c) {
 			return str;
 		}
-		++str;
 	}
 	return NULL;
 }
 
-void* std_memcpy(void* destination, const void* source, size_t num) {
-	char* dest = destination;
-	const char* src = source;
+
+void *memcopy(void *destination, const void *source, size_t num) {
+	char *dest = destination;
+	const char *src = source;
 	for (size_t i = 0; i < num; ++i) {
 		dest[i] = src[i];
 	}
@@ -31,7 +29,7 @@ void* std_memcpy(void* destination, const void* source, size_t num) {
 }
 
 
-int memeq(const char* lhs, const char* rhs, size_t count) {
+int memeq(const char *lhs, const char *rhs, size_t count) {
 	for (size_t i = 0; i < count; ++i) {
 		if (lhs[i] != rhs[i]) {
 			return FALSE;
@@ -40,24 +38,23 @@ int memeq(const char* lhs, const char* rhs, size_t count) {
 	return TRUE;
 }
 
-int strncmp(const char* lhs, const char* rhs, size_t count) {
+
+int stringncmp(const char *lhs, const char *rhs, size_t count) {
 	for (size_t i = 0; i < count; ++i) {
 		if (lhs[i] == 0) {
-			if (rhs[i] == 0) {
-				return 0;
-			} else {
-				return -1;
-			}
+			return rhs[i] == 0 ? 0 : -1;
 		} else {
 			if (rhs[i] == 0) {
 				return 1;
-			}
-			if (lhs[i] < rhs[i]) {
-				return -1;
-			} else if (lhs[i] > rhs[i]) {
-				return 1;
+			} else {
+				return lhs[i] < rhs[i] ? -1 : 1;
 			}
 		}
 	}
 	return 0;
+}
+
+
+int stringcmp(const char *lhs, const char *rhs) {
+	return stringncmp(lhs, rhs, (size_t)-1);
 }
